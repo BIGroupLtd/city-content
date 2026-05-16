@@ -1,0 +1,29 @@
+{
+  "page_title_suffix": "Same-Day Appliance Repair",
+  "meta_description": "Fast, reliable appliance repairs across Twickenham by vetted engineers. Same-day or next-day service for washing machines, ovens, dishwashers and more.",
+  "hero_headline": "Twickenham Appliance Repairs",
+  "hero_subheadline": "Fast, same-day repairs from vetted local engineers",
+  "cta_text": "Book Twickenham Repair",
+  "trust_statement": "All engineers are vetted, insured, and local to Twickenham",
+  "services": [
+    "Washing Machine Repair",
+    "Dishwasher Repair",
+    "Oven Repair",
+    "Fridge Repair",
+    "Tumble Dryer Repair"
+  ],
+  "faqs": [
+    {
+      "q": "How quickly can you repair my appliance?",
+      "a": "We offer same-day and next-day appointments across Twickenham. Contact us to check availability in your area."
+    },
+    {
+      "q": "Are your engineers insured and vetted?",
+      "a": "Yes — all engineers working in Twickenham are fully insured, DBS-checked, and vetted before joining our network."
+    },
+    {
+      "q": "Do you offer a guarantee on repairs?",
+      "a": "All repairs include a 3-month parts and labour guarantee as standard. Premium Members receive an extended 12-month guarantee."
+    }
+  ]
+}
