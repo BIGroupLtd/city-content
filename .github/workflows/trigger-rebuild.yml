@@ -1,0 +1,28 @@
+name: Trigger PPC rebuild on CMS edit
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ppc/**.json'
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
+      - name: Get changed PPC site slugs
+        id: changed
+        run: |
+          SITES=$(git diff --name-only --diff-filter=AM HEAD~1 HEAD -- 'ppc/*.json' \
+            | sed 's|ppc/||;s|\.json||' | tr '\n' ' ' | sed 's/ $//')
+          echo "sites=$SITES" >> "$GITHUB_OUTPUT"
+          echo "Changed sites: $SITES"
+      - name: Dispatch rebuild to ironclad-infra
+        if: steps.changed.outputs.sites != ''
+        run: |
+          gh api repos/BIGroupLtd/ironclad-infra/dispatches \
+            -f event_type=cms-city-rebuild \
+            -f 'client_payload[sites]=${{ steps.changed.outputs.sites }}'
+        env:
+          GH_TOKEN: ${{ secrets.IRONCLAD_DISPATCH_PAT }}
