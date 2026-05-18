@@ -15,7 +15,7 @@
   "faqs": [
     {
       "q": "How much does appliance repair cost in Barnet?",
-      "a": "Appliance repair costs in Barnet typically range from £60 to £200 depending on the appliance type and the nature of the fault. We operate a no-fix-no-fee policy, so you only pay if the repair is completed successfully. A fixed diagnosis fee applies and is deducted from the final repair cost if you proceed."
+      "a": "Appliance repair costs in Barnet typically range from \u00a360 to \u00a3200 depending on the appliance type and the nature of the fault. We operate a no-fix-no-fee policy, so you only pay if the repair is completed successfully. A fixed diagnosis fee applies and is deducted from the final repair cost if you proceed."
     },
     {
       "q": "How quickly can you repair my appliance in Barnet?",
@@ -25,5 +25,6 @@
       "q": "What appliances do you repair in Barnet?",
       "a": "Our engineers in Barnet repair a wide range of domestic appliances, including washing machines, dishwashers, ovens, fridges, tumble dryers, microwaves, and extractor fans. We cover all major brands and most models. If your appliance is not listed, contact us and we will confirm whether we can help."
     }
-  ]
+  ],
+  "_e2e_test": "2026-05-18-test"
 }
