@@ -1,0 +1,20 @@
+name: AI Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+  issues: write
+  actions: write
+
+jobs:
+  ai-review:
+    uses: BIGroupLtd/ironclad-infra/.github/workflows/ai-review-v3.yml@main
+    secrets: inherit
+    with:
+      gates: 'py_compile,shellcheck,gitleaks'
+      deploy_method: 'static'
