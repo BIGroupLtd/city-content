@@ -77,7 +77,7 @@ jobs:
           tar -xzf "$archive" -C "$RUNNER_TEMP"
           for file in "${files[@]}"; do
             bash -n "$file"
-            "$RUNNER_TEMP/shellcheck-v${SHELLCHECK_VERSION}/shellcheck" --severity=warning "$file"
+            "$RUNNER_TEMP/shellcheck-v${SHELLCHECK_VERSION}/shellcheck" --norc --severity=warning "$file"
           done
 
       - name: Compile changed Python files
