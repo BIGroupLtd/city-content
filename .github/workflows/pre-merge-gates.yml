@@ -1,7 +1,8 @@
 name: Pre-merge gates
 
 on:
-  pull_request:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
 
 permissions:
   contents: read
@@ -20,6 +21,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Record changed files
         env:
@@ -41,6 +43,8 @@ jobs:
             --output "$archive"
           echo "$GITLEAKS_SHA256  $archive" | sha256sum --check --strict
           tar -xzf "$archive" -C "$RUNNER_TEMP" gitleaks
+          printf '[extend]\nuseDefault = true\n' > "$RUNNER_TEMP/gitleaks.toml"
+          export GITLEAKS_CONFIG="$RUNNER_TEMP/gitleaks.toml"
           "$RUNNER_TEMP/gitleaks" detect --source=. --redact --verbose --exit-code=1 \
             --log-opts="${BASE_SHA}..${HEAD_SHA}"
 
