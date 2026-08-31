@@ -84,4 +84,4 @@ jobs:
             echo "No changed Python files"
             exit 0
           fi
-          python3 -m py_compile "${files[@]}"
+          python3 -I -m py_compile "${files[@]}"
