@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: pre-merge-gates-${{ github.event.pull_request.number }}
+  group: pre-merge-bootstrap-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
