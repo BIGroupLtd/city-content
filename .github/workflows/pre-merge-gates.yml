@@ -27,7 +27,10 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: git diff --name-only -z "$BASE_SHA" "$HEAD_SHA" > "$RUNNER_TEMP/changed-files"
+        run: |
+          set -euo pipefail
+          merge_base=$(git merge-base "$BASE_SHA" "$HEAD_SHA")
+          git diff --name-only -z "$merge_base" "$HEAD_SHA" > "$RUNNER_TEMP/changed-files"
 
       - name: Scan the PR commit range for secrets
         env:
@@ -45,8 +48,12 @@ jobs:
           tar -xzf "$archive" -C "$RUNNER_TEMP" gitleaks
           printf '[extend]\nuseDefault = true\n' > "$RUNNER_TEMP/gitleaks.toml"
           export GITLEAKS_CONFIG="$RUNNER_TEMP/gitleaks.toml"
-          "$RUNNER_TEMP/gitleaks" detect --source=. --redact --verbose --exit-code=1 \
-            --log-opts="${BASE_SHA}..${HEAD_SHA}"
+          trusted_ignore="$RUNNER_TEMP/gitleaksignore"
+          : > "$trusted_ignore"
+          merge_base=$(git merge-base "$BASE_SHA" "$HEAD_SHA")
+          "$RUNNER_TEMP/gitleaks" detect --source=. --config="$GITLEAKS_CONFIG" \
+            --gitleaks-ignore-path="$trusted_ignore" --redact --verbose --exit-code=1 \
+            --log-opts="${merge_base}..${HEAD_SHA}"
 
       - name: Check changed shell scripts
         env:
