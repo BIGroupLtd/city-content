@@ -2,6 +2,7 @@ name: Pre-merge gates
 
 # Public-repository exception: GitHub-hosted standard runners are free/unlimited
 # for this public repository and do not consume BIGroupLtd's private Actions allowance.
+# This fresh filename prevents reuse of the retired self-hosted workflow record.
 on:
   pull_request_target:
     types: [opened, reopened, synchronize, ready_for_review]
