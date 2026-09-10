@@ -1,0 +1,28 @@
+name: Pre-merge gates
+
+# Trusted exact-head deterministic gate. The immutable action fetches PR content
+# only as data, then scans it inside disposable isolated containers.
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: pre-merge-trusted-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  gates:
+    name: Pre-merge gates
+    runs-on: [self-hosted, ironclad]
+    timeout-minutes: 20
+    steps:
+      - name: Scan exact PR head as isolated data
+        uses: BIGroupLtd/ironclad-infra/.github/actions/trusted-premerge-gate@460220eab707f4e9f5a98a3e993c8ca920ec6947
+        with:
+          repository: ${{ github.repository }}
+          pull-request-number: ${{ github.event.pull_request.number }}
+          event-head-sha: ${{ github.event.pull_request.head.sha }}
