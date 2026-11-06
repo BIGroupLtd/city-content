@@ -22,6 +22,30 @@ Missing source configuration fails explicitly; missing or changed source cannot
 produce a skipped/pass result. Source pins are test custody only and do not
 change any runtime/release pin. Review source changes before updating the pin.
 
+### B211-fix offline proof
+
+The explicit fixture is `tests/fixtures/city-producer/bank-boundary.json`,
+under `producer_source`: repository `BIGroupLtd/ironclad-infra`, commit
+`0bd7ae3754acbf056558c89b87240bedda98a7aa`, path
+`scripts/city_blog_draft.py`, expected SHA-256
+`5caf2bc81292a1e2639ffa5a7e0bd92c978cf478d7e8eb946eb82737bc410c06`.
+The test independently asserts this complete pin, then hashes the bytes named
+by `CITY_PRODUCER_SOURCE` before module creation, compilation or execution.
+It executes the same authenticated byte buffer; it does not reread the file
+through an import loader. A changed filename alone cannot establish provenance.
+
+Review does not require embedding the producer: the negative test poisons module
+creation and proves rejection of altered pinned bytes, sentinel-writing source,
+each changed repository/commit/path pin, and a replacement file paired with its
+own correct digest. Module creation stays uncalled and the sentinel stays absent.
+Missing configuration, missing files and wrong hashes remain errors, never skips.
+
+Local unittest invocation in the cloud workspace on 2026-11-06: **6/6 PASS**
+(`Ran 6 tests`, `OK`, Python 3.12.14), using the command above and an explicitly
+supplied scratch source whose measured SHA-256 matched the fixture. PR #11 also
+records its earlier cloud run as 6/6 PASS. These are offline compatibility
+results; a separate workstation run or a new Gate confidence score is not claimed.
+
 Six standard-library tests cover raw bank-row refusal, forged authority refusal,
 missing research/action refusal despite planning-source text, unknown/excluded
 destinations before writer/output, draft metadata stripping, preserved synthetic
