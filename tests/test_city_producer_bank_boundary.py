@@ -154,6 +154,37 @@ class BankBoundary(unittest.TestCase):
                 writer['generate_blog'].assert_called_once()
                 self.assertEqual(self.request, original)
 
+    def test_explicit_dry_run_hold_matrix(self):
+        matrix = json.loads((FIXTURE.parent / 'dry-run-holds.json').read_text())
+        self.assertEqual({key: matrix[key] for key in (
+            'synthetic_only', 'status', 'enabled', 'approved',
+            'not_runtime_queue', 'cron_enabled', 'READY')}, {
+                'synthetic_only': True, 'status': 'HOLD', 'enabled': False,
+                'approved': False, 'not_runtime_queue': True,
+                'cron_enabled': False, 'READY': 'no'})
+        self.assertEqual({case['id'] for case in matrix['cases']}, {
+            'native-refusal', 'below-floor', 'combined-holds', 'floor-still-draft'})
+        for case in matrix['cases']:
+            with self.subTest(case=case['id']):
+                output = self.directory / case['id']
+                writer = self.writer(violations=case['violations'], words=case['words'])
+                receipt = self.draft.generate(self.request, output, writer=writer)
+                self.assertEqual(receipt['native_violations'], case['expected'])
+                self.assertEqual(receipt['gatePass'], 'absent')
+                self.assertEqual(receipt['status'], 'draft_only')
+                self.assertIn('current_master_rules_binding', receipt['missing_full_gate_inputs'])
+                self.assertEqual(json.loads((output / 'draft-result.json').read_text()), receipt)
+                artifacts = {p.name: p.read_bytes() for p in output.iterdir()}
+                self.assertEqual(set(artifacts), {'site-config.json', 'draft-result.json'})
+                writer['generate_blog'].assert_called_once()
+                # Reusing a held directory must never overwrite its evidence or
+                # call generation again, even after a clean mock validation.
+                retry = self.writer()
+                with self.assertRaises(FileExistsError):
+                    self.draft.generate(self.request, output, writer=retry)
+                retry['generate_blog'].assert_not_called()
+                self.assertEqual(artifacts, {p.name: p.read_bytes() for p in output.iterdir()})
+
     def test_tampered_source_refused_before_module_execution(self):
         sentinel = self.directory / 'executed'
         changed = self.directory / 'tampered.py'
