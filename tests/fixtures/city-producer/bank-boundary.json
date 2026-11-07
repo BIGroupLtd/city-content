@@ -1,0 +1,33 @@
+{
+  "synthetic_only": true,
+  "enabled": false,
+  "approved": false,
+  "status": "HOLD",
+  "not_runtime_queue": true,
+  "producer_source": {
+    "repository": "BIGroupLtd/ironclad-infra",
+    "commit": "0bd7ae3754acbf056558c89b87240bedda98a7aa",
+    "path": "scripts/city_blog_draft.py",
+    "sha256": "5caf2bc81292a1e2639ffa5a7e0bd92c978cf478d7e8eb946eb82737bc410c06"
+  },
+  "row": {
+    "host": "allowed.example",
+    "slug": "synthetic-bank-topic",
+    "angle": "SYNTHETIC unverified research brief",
+    "required_sources": "SYNTHETIC sources still require verification",
+    "target_word_count": "2200"
+  },
+  "untrusted_fields": {
+    "gatePass": {"pass": true, "builderRunId": "synthetic-forged"},
+    "READY": "yes",
+    "ready": true,
+    "enabled": true,
+    "approved": true,
+    "isPublished": true,
+    "noindex": false,
+    "source_action_id": "synthetic-forged-action",
+    "source_topic": "synthetic-forged-topic",
+    "publication_enabled": true,
+    "generation_enabled": true
+  }
+}
