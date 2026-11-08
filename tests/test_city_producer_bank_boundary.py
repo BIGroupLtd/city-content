@@ -15,12 +15,23 @@ import urllib.request
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / 'tests/fixtures/city-producer/bank-boundary.json'
 
+# Independent review anchor: the explicit JSON fixture must name this exact
+# upstream file and digest, not merely any source/digest pair supplied together.
+EXPECTED_PRODUCER_SOURCE = {
+    'repository': 'BIGroupLtd/ironclad-infra',
+    'commit': '0bd7ae3754acbf056558c89b87240bedda98a7aa',
+    'path': 'scripts/city_blog_draft.py',
+    'sha256': '5caf2bc81292a1e2639ffa5a7e0bd92c978cf478d7e8eb946eb82737bc410c06',
+}
 
-def load_producer(path, expected):
+
+def load_producer(path, source_pin):
     # Authenticate bytes before executing any external module. No native writer
     # is loaded; every generation call below receives an explicit mock writer.
+    if source_pin != EXPECTED_PRODUCER_SOURCE:
+        raise ValueError('producer_source_pin_mismatch')
     raw = path.read_bytes()
-    if hashlib.sha256(raw).hexdigest() != expected:
+    if hashlib.sha256(raw).hexdigest() != source_pin['sha256']:
         raise ValueError('producer_source_hash_mismatch')
     spec = importlib.util.spec_from_file_location('b211_draft', path)
     module = importlib.util.module_from_spec(spec)
@@ -36,7 +47,7 @@ class BankBoundary(unittest.TestCase):
         if not source:
             raise RuntimeError('CITY_PRODUCER_SOURCE must name the pinned offline source file')
         cls.source = Path(source)
-        cls.draft = load_producer(cls.source, cls.fixture['producer_source']['sha256'])
+        cls.draft = load_producer(cls.source, cls.fixture['producer_source'])
 
     def setUp(self):
         self.scratch = tempfile.TemporaryDirectory()
@@ -83,6 +94,7 @@ class BankBoundary(unittest.TestCase):
         self.assertEqual(before, {p.name: p.read_bytes() for p in self.directory.iterdir()})
 
     def test_fixture_is_held_and_has_only_synthetic_identities(self):
+        self.assertEqual(self.fixture['producer_source'], EXPECTED_PRODUCER_SOURCE)
         self.assertIs(self.fixture['synthetic_only'], True)
         self.assertIs(self.fixture['enabled'], False)
         self.assertIs(self.fixture['approved'], False)
@@ -146,8 +158,26 @@ class BankBoundary(unittest.TestCase):
         sentinel = self.directory / 'executed'
         changed = self.directory / 'tampered.py'
         changed.write_text('from pathlib import Path\nPath(' + repr(str(sentinel)) + ').touch()\n')
-        with self.assertRaisesRegex(ValueError, 'producer_source_hash_mismatch'):
-            load_producer(changed, self.fixture['producer_source']['sha256'])
+        # A source file with the right name is insufficient. Neither altered
+        # pinned bytes nor a self-consistent replacement file/digest may import.
+        altered = self.directory / 'city_blog_draft.py'
+        altered.write_bytes(self.source.read_bytes() + b'\n# changed\n')
+        with patch.object(importlib.util, 'spec_from_file_location',
+                          side_effect=AssertionError('import before authentication')) as spec:
+            for path in (changed, altered):
+                with self.subTest(source=path.name):
+                    with self.assertRaisesRegex(ValueError, 'producer_source_hash_mismatch'):
+                        load_producer(path, self.fixture['producer_source'])
+            for field, replacement in (
+                    ('repository', 'synthetic/other'),
+                    ('commit', '0' * 40),
+                    ('path', 'scripts/other.py'),
+                    ('sha256', hashlib.sha256(changed.read_bytes()).hexdigest())):
+                pin = dict(self.fixture['producer_source'], **{field: replacement})
+                with self.subTest(pin_field=field):
+                    with self.assertRaisesRegex(ValueError, 'producer_source_pin_mismatch'):
+                        load_producer(changed, pin)
+            spec.assert_not_called()
         self.assertFalse(sentinel.exists())
 
 
