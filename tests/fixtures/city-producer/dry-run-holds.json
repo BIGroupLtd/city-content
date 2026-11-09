@@ -1,0 +1,15 @@
+{
+  "synthetic_only": true,
+  "status": "HOLD",
+  "enabled": false,
+  "approved": false,
+  "not_runtime_queue": true,
+  "cron_enabled": false,
+  "READY": "no",
+  "cases": [
+    {"id": "native-refusal", "words": 2200, "violations": ["SYNTHETIC native refusal"], "expected": ["SYNTHETIC native refusal"]},
+    {"id": "below-floor", "words": 1999, "violations": [], "expected": ["LENGTH: below hard floor"]},
+    {"id": "combined-holds", "words": 1999, "violations": ["SYNTHETIC native refusal"], "expected": ["SYNTHETIC native refusal", "LENGTH: below hard floor"]},
+    {"id": "floor-still-draft", "words": 2000, "violations": [], "expected": []}
+  ]
+}
