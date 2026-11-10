@@ -59,7 +59,7 @@ Run all existing and added producer regressions with the unchanged source pin:
 CITY_PRODUCER_SOURCE=/path/to/pinned/city_blog_draft.py python3 -I -B -m unittest discover -s tests -p 'test_city_producer*.py' -v
 ~~~
 
-31 methods PASS, zero skips, including ten new map-binding methods. Actual
+33 methods PASS, zero skips, including twelve map-binding methods. Actual
 source authentication remains ironclad-infra
 0bd7ae3754acbf056558c89b87240bedda98a7aa,
 SHA256 5caf2bc81292a1e2639ffa5a7e0bd92c978cf478d7e8eb946eb82737bc410c06.
@@ -75,7 +75,8 @@ unmodified qualifier passes again. No mutant is retained.
 
 This qualifies only map/destination consistency, NOT artifact bytes/receipt
 authenticity, whole-output acceptance, publication admission, current pathname
-or adversarial snapshot stability, ancestor symlinks, mount/ACL custody, live
+after the final observation or adversarial snapshot stability, ancestor
+symlinks, mount/ACL custody, live
 time freshness, physical durability, deployed/current-upstream compatibility
 or migration completion. The native source's dual read is not repaired. Do not
 rewrite/resubmit/replay an uncertain attempt or replace its evidence to get
@@ -103,3 +104,62 @@ Keep the same PR open/unmerged, auto-merge OFF. Acceptance still requires the
 genuine exact-head App4760566 AI Review Gate APPROVE >=8 / zero blockers,
 App15368 and every applicable protection. Local qualification cannot replace
 those checks or authorize any runtime action.
+
+## Whole input-pair stability
+
+A follow-on red/green regression demonstrated eighteen false MATCH cases in the
+previous qualifier: either map or receipt could change after its own stable
+read, while validation still used the earlier bytes. This was a real offline
+qualifier gap, separate from the native producer's map epoch gap.
+
+The existing qualifier now records both no-follow leaf identities before
+reading either file, then rechecks the whole pair after parsing and binding
+checks, immediately before MATCH. Device/inode/mode/link count/size/mtime/ctime
+must remain equal. Missing or changed names refuse with input_set_changed;
+the recheck never opens or follows replacement leaves. The same metadata
+identity helper serves the original descriptor reader. No CLI/schema/default
+change and no new module or runtime caller.
+
+Two regression methods inject six byte/mode/time changes and twelve leaf
+substitutions across both inputs after their individually successful reads.
+Substitutions cover identical bytes/mode/mtime on another inode, missing names,
+symlink, FIFO, directory and foreign hardlink. Prior implementation: 18 assertion
+failures, zero execution errors. Corrected implementation: all 33 producer
+methods PASS, zero skips. Every refused input pair remains exactly as the test's
+injection left it; the qualifier never rewrites/repairs/deletes anything.
+Original retained artifacts remain unchanged.
+
+Fresh sibling scope inspection preceded editing: only other project PR14,
+no active project issue claims; targeted map/cohort/input_set_changed/qualifier
+searches found no competing map qualifier. #6052/#6069 actual file inventories
+own Factory receipt paths/sets and do not overlap these files. #5476 owns
+published-HTML handoff checking, not this original-map qualifier. No external
+claim-registry clearance asserted.
+
+This is optimistic detection of observed ordinary changes, not locking or a
+transactional/cryptographically authenticated snapshot. Ancestor changes,
+adversarial change-and-restore beyond observable metadata, or mutation after
+the final observation remain unqualified. MATCH remains HOLD, never admission.
+
+After-merge smoke (stdlib only, fixed synthetic receipt, no producer/model):
+
+~~~sh
+python3 -I -B tools/blog_output_map_parity.py
+python3 -I -B - <<'PY'
+import pathlib, subprocess, sys, tempfile
+with tempfile.TemporaryDirectory(prefix='mig0819-smoke-') as directory:
+    mapping = pathlib.Path(directory) / 'map.json'
+    mapping.write_bytes(b'{"allowed.example": "allowed.example"}')
+    subprocess.run([
+        sys.executable, '-I', '-B', 'tools/blog_output_map_parity.py',
+        '--offline', '--receipt', 'tests/fixtures/city-producer/locale-output-result.json',
+        '--map-snapshot', str(mapping),
+        '--expected-map-sha256', '37bafb6d434ca6049a799107fa5a85a82f70caf783edbeadcaa0c9c48b916d80',
+        '--request-host', 'allowed.example'
+    ], env={}, check=True, timeout=10)
+PY
+~~~
+
+Observed outputs are DISABLED/HOLD then MATCH/HOLD, all authority booleans false.
+The full source-authenticated regression command above additionally exercises
+the eighteen refusal cases. No package install, live data or provider required.

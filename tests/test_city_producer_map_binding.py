@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import os
 import socket
+import stat
 import unittest
 from unittest.mock import patch
 
@@ -284,6 +285,100 @@ class MapBinding(unittest.TestCase):
             value = json.loads(out.getvalue())
             self.assertEqual(value['status'], 'HOLD')
             self.assertIs(value['publish_allowed'], False)
+
+    def test_changes_between_individually_stable_reads_refuse_the_input_pair(self):
+        reader = parity._regular_bytes
+        for selected in ('map', 'receipt'):
+            for change in ('bytes', 'mode', 'mtime'):
+                with self.subTest(selected=selected, change=change):
+                    folder = self.h.directory / (selected + '-' + change)
+                    folder.mkdir()
+                    mapping, receipt = folder / 'map.json', folder / 'receipt.json'
+                    mapping.write_bytes(self.baseline.read_bytes())
+                    receipt.write_bytes(self.receipt.read_bytes())
+                    target = mapping if selected == 'map' else receipt
+                    observed = []
+
+                    def mutate_after_last_read(path, limit):
+                        raw = reader(path, limit)
+                        if path == receipt:
+                            if change == 'bytes':
+                                target.write_bytes(target.read_bytes() + b' ')
+                            elif change == 'mode':
+                                target.chmod(0o400)
+                            else:
+                                value = target.stat()
+                                os.utime(target, ns=(value.st_atime_ns, value.st_mtime_ns + 1_000_000_000))
+                            observed.append(snapshot(target))
+                        return raw
+
+                    with patch.object(parity, '_regular_bytes', mutate_after_last_read):
+                        result = parity.qualify(offline=True, receipt=receipt, map_snapshot=mapping,
+                                                expected_map_sha256=self.digest,
+                                                request_host='allowed.example')
+                    self.assertEqual(result['reason'], 'input_set_changed')
+                    self.assertEqual(result['map_binding'], 'REFUSED')
+                    self.assertIs(result['publish_allowed'], False)
+                    self.assertEqual(len(observed), 1)
+                    self.assertEqual(snapshot(target), observed[0])
+        self.assertEqual({p.name: snapshot(p) for p in self.target.iterdir()}, self.retained)
+
+    def test_leaf_replacement_after_both_reads_refuses_without_following_or_rewriting(self):
+        reader = parity._regular_bytes
+
+        def state(path):
+            if not path.exists() and not path.is_symlink():
+                return None
+            value = path.lstat()
+            body = path.read_bytes() if stat.S_ISREG(value.st_mode) else (
+                os.readlink(path) if stat.S_ISLNK(value.st_mode) else None)
+            return (value.st_dev, value.st_ino, value.st_mode, value.st_nlink,
+                    value.st_size, value.st_mtime_ns, value.st_ctime_ns, body)
+
+        for selected in ('map', 'receipt'):
+            for kind in ('identical_inode_replacement', 'missing', 'symlink', 'fifo', 'directory', 'hardlink'):
+                with self.subTest(selected=selected, kind=kind):
+                    folder = self.h.directory / (selected + '-' + kind)
+                    folder.mkdir()
+                    mapping, receipt = folder / 'map.json', folder / 'receipt.json'
+                    mapping.write_bytes(self.baseline.read_bytes())
+                    receipt.write_bytes(self.receipt.read_bytes())
+                    target = mapping if selected == 'map' else receipt
+                    observed = []
+
+                    def substitute_after_last_read(path, limit):
+                        raw = reader(path, limit)
+                        if path == receipt:
+                            saved = target.read_bytes()
+                            metadata = target.stat()
+                            replacement = folder / 'foreign'
+                            replacement.write_bytes(saved)
+                            replacement.chmod(stat.S_IMODE(metadata.st_mode))
+                            os.utime(replacement, ns=(metadata.st_atime_ns, metadata.st_mtime_ns))
+                            target.unlink()
+                            if kind == 'identical_inode_replacement':
+                                os.replace(replacement, target)
+                            elif kind == 'symlink':
+                                target.symlink_to(replacement)
+                            elif kind == 'fifo':
+                                os.mkfifo(target)
+                            elif kind == 'directory':
+                                target.mkdir()
+                            elif kind == 'hardlink':
+                                os.link(replacement, target)
+                            observed.append((state(target), state(replacement)))
+                        return raw
+
+                    with patch.object(parity, '_regular_bytes', substitute_after_last_read):
+                        result = parity.qualify(offline=True, receipt=receipt, map_snapshot=mapping,
+                                                expected_map_sha256=self.digest,
+                                                request_host='allowed.example')
+                    self.assertEqual(result['reason'], 'input_set_changed')
+                    self.assertEqual(result['map_binding'], 'REFUSED')
+                    self.assertIs(result['publish_allowed'], False)
+                    self.assertEqual(len(observed), 1)
+                    self.assertEqual((state(target), state(folder / 'foreign')), observed[0])
+        self.assertEqual({p.name: snapshot(p) for p in self.target.iterdir()}, self.retained)
 
 
 if __name__ == '__main__':
