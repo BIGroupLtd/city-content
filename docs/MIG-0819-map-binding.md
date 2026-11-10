@@ -59,7 +59,8 @@ Run all existing and added producer regressions with the unchanged source pin:
 CITY_PRODUCER_SOURCE=/path/to/pinned/city_blog_draft.py python3 -I -B -m unittest discover -s tests -p 'test_city_producer*.py' -v
 ~~~
 
-38 methods PASS, zero skips, including seventeen map-binding methods. Actual
+46 methods PASS, zero skips, including seventeen map-binding and eight separate
+request/output identity methods. Actual
 source authentication remains ironclad-infra
 0bd7ae3754acbf056558c89b87240bedda98a7aa,
 SHA256 5caf2bc81292a1e2639ffa5a7e0bd92c978cf478d7e8eb946eb82737bc410c06.
@@ -163,6 +164,10 @@ PY
 Observed outputs are DISABLED/HOLD then MATCH/HOLD, all authority booleans false.
 The full source-authenticated regression command above additionally exercises
 the eighteen refusal cases. No package install, live data or provider required.
+
+The complementary [request/output identity qualifier](MIG-0819-request-binding.md)
+checks saved source action/topic against original request custody. It reuses
+these readers but leaves this CLI, map consistency and PR14 transfer scope intact.
 
 ## Decoded input scalar validation
 

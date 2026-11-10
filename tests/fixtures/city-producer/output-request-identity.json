@@ -1,0 +1,9 @@
+{
+  "source_action_id": "synthetic-动作",
+  "topic": "SYNTHETIC Ω é",
+  "synthetic_only": true,
+  "enabled": false,
+  "approved": false,
+  "not_runtime_queue": true,
+  "status": "HOLD"
+}

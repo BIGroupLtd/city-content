@@ -26,6 +26,15 @@ def _input_signature(paths):
     return tuple(_identity(os.stat(path, follow_symlinks=False)) for path in paths)
 
 
+def _require_signature(paths, original):
+    try:
+        current = _input_signature(paths)
+    except OSError:
+        raise Refused('input_set_changed') from None
+    if current != original:
+        raise Refused('input_set_changed')
+
+
 def _regular_bytes(path, limit):
     # O_NONBLOCK prevents a substituted FIFO from hanging before fstat.
     descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
@@ -138,12 +147,7 @@ def qualify(*, offline=False, receipt=None, map_snapshot=None,
             raise Refused('draft_hold_mismatch')
         # A stable individual read is insufficient if the earlier map changes
         # while the receipt is read/parsed, or either leaf is then replaced.
-        try:
-            current_signature = _input_signature(inputs)
-        except OSError:
-            raise Refused('input_set_changed') from None
-        if current_signature != original_signature:
-            raise Refused('input_set_changed')
+        _require_signature(inputs, original_signature)
         result.update(map_binding='MATCH', reason='map_binding_matches_still_held')
     except Refused as exc:
         result['reason'] = str(exc)
