@@ -1,6 +1,7 @@
 """Synthetic receiving-boundary oracle. Never a publisher or runtime importer."""
 import hashlib
 import json
+import os
 from pathlib import Path
 
 EXPECTED_MEMBERS = frozenset({'draft-result.json', 'site-config.json'})
@@ -8,6 +9,18 @@ EXPECTED_MEMBERS = frozenset({'draft-result.json', 'site-config.json'})
 
 def _bundle_members(directory):
     return frozenset(path.name for path in Path(directory).iterdir())
+
+
+class _Held(Exception):
+    """Stop input inspection, then persist the fixed refusal outside its try."""
+
+
+def _persist_evidence(retained, result):
+    payload = json.dumps(result, sort_keys=True) + '\n'
+    if retained.write(payload) != len(payload):
+        raise OSError('incomplete_evidence_write')
+    retained.flush()
+    os.fsync(retained.fileno())
 
 
 def inspect_transfer(directory=None, evidence=None, *, offline=False,
@@ -30,13 +43,11 @@ def inspect_transfer(directory=None, evidence=None, *, offline=False,
             if (not isinstance(expected_run_id, str) or not expected_run_id
                     or not isinstance(expected_action_id, str) or not expected_action_id):
                 result['reason'] = 'missing_attempt_custody'
-                retained.write(json.dumps(result, sort_keys=True) + '\n')
-                return result
+                raise _Held
             members = _bundle_members(directory)
             if members - EXPECTED_MEMBERS:
                 result['reason'] = 'unexpected_bundle_members'
-                retained.write(json.dumps(result, sort_keys=True) + '\n')
-                return result
+                raise _Held
             raw = {}
             for name in ('draft-result.json', 'site-config.json'):
                 raw[name] = (Path(directory) / name).read_bytes()
@@ -45,8 +56,7 @@ def inspect_transfer(directory=None, evidence=None, *, offline=False,
                     'sha256': hashlib.sha256(raw[name]).hexdigest()}
             if _bundle_members(directory) != members:
                 result['reason'] = 'bundle_members_changed'
-                retained.write(json.dumps(result, sort_keys=True) + '\n')
-                return result
+                raise _Held
             receipt = json.loads(raw['draft-result.json'])
             artifact = json.loads(raw['site-config.json'])
             if (hashlib.sha256(raw['draft-result.json']).hexdigest()
@@ -71,8 +81,12 @@ def inspect_transfer(directory=None, evidence=None, *, offline=False,
                     result['reason'] = 'action_identity_mismatch'
                 else:
                     result['reason'] = 'complete_draft_still_held'
+        except _Held:
+            pass
         except (OSError, ValueError, UnicodeError):
             # Never retain content, paths, source identifiers or exception text.
             pass
-        retained.write(json.dumps(result, sort_keys=True) + '\n')
+        # Input refusal is retainable; evidence I/O failure must propagate.
+        # Never return an in-memory result as if its retry evidence was saved.
+        _persist_evidence(retained, result)
     return result
