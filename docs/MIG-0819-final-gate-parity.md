@@ -60,3 +60,52 @@ files, preserving all prior evidence and original-owner holds.
 
 No merge, deployment, live flip, paid service, SSH/restart, GA4_FEED_ENABLED,
 stock/Ads changes, Kubernetes, content generation/publication or Commerce82 replay.
+
+## Continued offline boundary: POSIX output permissions
+
+The first head's Pre-merge gates passed, but its genuine App4760566 suite
+remained queued with zero check runs/findings on continuation. Under the user's
+instruction to advance another unowned offline boundary, this same PR also
+qualifies pinned-producer output modes. No second PR or runtime implementation.
+
+Fresh open city-content PR/issue inspection returned only #14 and this #15,
+with no active issue claims. Targeted all-state/open org searches for Blog
+umask, output permissions and permission parity found no matching City draft
+qualification. Reservation/concurrency was considered and excluded after reading
+the actual ironclad #6022 patch and inventory: that PR already owns it. #6044
+owns published-HTML receiver containment. #5935 owns SEO worker identity, while
+#5673's source/core inventory and existing draft tests were inspected; neither
+owns this pinned draft permission matrix. All those paths remain unchanged.
+These are bounded GitHub claim checks, not external-registry clearance.
+
+The synthetic saved fixture `tests/fixtures/city-producer/output-permissions.json`
+is HOLD, enabled=false, approved=false and not a runtime queue. Four additional
+tests execute as an ordinary POSIX user (UID 1000 in this run):
+
+- Six umasks (000/002/007/022/027/077) all reserve a 0700 directory BEFORE
+  the mock callback. Both regular files retain native 0666-and-umask modes,
+  effective-user ownership and one link; their bytes/hash/result remain bound.
+- Three owner-restricting masks remove directory write or search permission.
+  The real filesystem refuses the first artifact after synthetic callbacks;
+  the producer does not silently chmod or emit a receipt. Tests restore mode
+  only after original-mode/refusal assertions, for evidence inspection/cleanup.
+- Missing, regular-file and unwritable parents refuse actual mkdir before
+  writer dispatch. Native loading stays prohibited, no output is created and
+  pre-existing parent/sibling evidence remains exact.
+- Actual CLI permission denial returns 1, no stdout and only PermissionError
+  on stderr, without exposing the synthetic private path or loading a writer.
+
+All 20 producer tests PASS / zero skips (12 original, eight in this PR).
+A scratch-memory mutation widening reservation mode from 0700 to 0777 yields
+five expected assertion failures and zero errors; no mutant is retained.
+Root/non-POSIX execution fails qualification explicitly rather than skipping
+permission checks. Umask changes are bounded by try/finally and restored.
+No chmod/chown/identity change occurs outside temporary synthetic paths.
+
+This proves ordinary POSIX DAC behavior in the tested filesystem, not ACLs,
+alternate identities, group custody, hostile ancestors, symlink containment,
+mount semantics, concurrent umask changes, installed volume compatibility or
+durability. With a permissive umask, files themselves can have group/world bits;
+privacy here comes from the new 0700 parent. Do not serve/chmod/move that
+directory or infer publish permission. Source/defaults and all original holds
+remain unchanged. Rollback removes this PR's inert tests/fixture/document only.
