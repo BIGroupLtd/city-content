@@ -4,7 +4,9 @@ import json
 from pathlib import Path
 
 
-def inspect_transfer(directory, evidence, *, expected_receipt_sha256):
+def inspect_transfer(directory=None, evidence=None, *, offline=False,
+                     expected_receipt_sha256=None, expected_run_id=None,
+                     expected_action_id=None):
     """Retain a new metadata-only HOLD; retry must use a new evidence path.
 
     The expected digest comes from separately retained sender custody, never
@@ -13,9 +15,17 @@ def inspect_transfer(directory, evidence, *, expected_receipt_sha256):
     result = {'status': 'HOLD', 'enabled': False, 'approved': False,
               'publish_allowed': False, 'retry': 'new_offline_attempt',
               'reason': 'incomplete_transfer', 'observed': {}}
+    if offline is not True:
+        result['reason'] = 'offline_not_requested'
+        return result
     # Reserve before inspecting: repeated delivery cannot replace prior evidence.
     with Path(evidence).open('x', encoding='utf-8') as retained:
         try:
+            if (not isinstance(expected_run_id, str) or not expected_run_id
+                    or not isinstance(expected_action_id, str) or not expected_action_id):
+                result['reason'] = 'missing_attempt_custody'
+                retained.write(json.dumps(result, sort_keys=True) + '\n')
+                return result
             raw = {}
             for name in ('draft-result.json', 'site-config.json'):
                 raw[name] = (Path(directory) / name).read_bytes()
@@ -38,7 +48,14 @@ def inspect_transfer(directory, evidence, *, expected_receipt_sha256):
                   or len(artifact['blog_posts']) != 1):
                 result['reason'] = 'draft_contract_refused'
             else:
-                result['reason'] = 'complete_draft_still_held'
+                post = artifact['blog_posts'][0]
+                if receipt.get('builderRunId') != expected_run_id:
+                    result['reason'] = 'run_identity_mismatch'
+                elif (not isinstance(post, dict)
+                      or post.get('source_action_id') != expected_action_id):
+                    result['reason'] = 'action_identity_mismatch'
+                else:
+                    result['reason'] = 'complete_draft_still_held'
         except (OSError, ValueError, UnicodeError):
             # Never retain content, paths, source identifiers or exception text.
             pass

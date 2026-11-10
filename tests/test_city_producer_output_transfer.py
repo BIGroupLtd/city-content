@@ -23,12 +23,15 @@ class OutputTransfer(unittest.TestCase):
         self.h.draft.generate(self.h.request, self.sender, writer=self.h.writer())
         self.receipt_hash = hashlib.sha256(
             (self.sender / 'draft-result.json').read_bytes()).hexdigest()
+        self.run_id = json.loads((self.sender / 'draft-result.json').read_bytes())['builderRunId']
 
     def inspect(self, directory, name):
         evidence = self.h.directory / (name + '.json')
         before = {p.name: p.read_bytes() for p in directory.iterdir()}
-        result = inspect_transfer(directory, evidence,
-                                  expected_receipt_sha256=self.receipt_hash)
+        custody = dict(offline=True, expected_receipt_sha256=self.receipt_hash,
+                       expected_run_id=self.run_id,
+                       expected_action_id=self.h.request['source_action_id'])
+        result = inspect_transfer(directory, evidence, **custody)
         self.assertEqual(result, json.loads(evidence.read_text()))
         self.assertEqual(result['status'], 'HOLD')
         for key in ('enabled', 'approved', 'publish_allowed'):
@@ -36,11 +39,51 @@ class OutputTransfer(unittest.TestCase):
         self.assertEqual(before, {p.name: p.read_bytes() for p in directory.iterdir()})
         saved = evidence.read_bytes()
         with self.assertRaises(FileExistsError):
-            inspect_transfer(directory, evidence,
-                             expected_receipt_sha256=self.receipt_hash)
+            inspect_transfer(directory, evidence, **custody)
         self.assertEqual(saved, evidence.read_bytes())
         self.assertNotIn('Synthetic title', evidence.read_text())
         return result
+
+    def test_default_off_does_not_read_or_create_evidence(self):
+        with patch.object(Path, 'open', side_effect=AssertionError('filesystem access')):
+            result = inspect_transfer()
+        self.assertEqual(result['reason'], 'offline_not_requested')
+        self.assertIs(result['publish_allowed'], False)
+
+    def test_intact_wrong_run_and_action_fail_even_with_matching_sender_digest(self):
+        # Hash integrity alone cannot bind an intact old attempt to this request.
+        for field, value, reason in (
+                ('expected_run_id', 'another-run', 'run_identity_mismatch'),
+                ('expected_action_id', 'another-action', 'action_identity_mismatch'),
+                ('expected_run_id', None, 'missing_attempt_custody'),
+                ('expected_action_id', '', 'missing_attempt_custody')):
+            with self.subTest(field=field, value=value):
+                custody = dict(offline=True, expected_receipt_sha256=self.receipt_hash,
+                               expected_run_id=self.run_id,
+                               expected_action_id=self.h.request['source_action_id'])
+                custody[field] = value
+                evidence = self.h.directory / (field + str(value) + '.json')
+                result = inspect_transfer(self.sender, evidence, **custody)
+                self.assertEqual(result['reason'], reason)
+                self.assertEqual(result, json.loads(evidence.read_bytes()))
+                self.assertIs(result['publish_allowed'], False)
+                self.assertNotIn(self.run_id, evidence.read_text())
+                self.assertNotIn(self.h.request['source_action_id'], evidence.read_text())
+
+    def test_cross_attempt_pair_is_refused_and_new_attempt_remains_held(self):
+        second = self.h.directory / 'second'
+        receipt = self.h.draft.generate(self.h.request, second, writer=self.h.writer())
+        self.assertNotEqual(receipt['builderRunId'], self.run_id)
+        second_hash = hashlib.sha256((second / 'draft-result.json').read_bytes()).hexdigest()
+        for label, run, reason in (
+                ('stale', self.run_id, 'run_identity_mismatch'),
+                ('current', receipt['builderRunId'], 'complete_draft_still_held')):
+            result = inspect_transfer(second, self.h.directory / (label + '.json'),
+                                      offline=True, expected_receipt_sha256=second_hash,
+                                      expected_run_id=run,
+                                      expected_action_id=self.h.request['source_action_id'])
+            self.assertEqual(result['reason'], reason)
+            self.assertIs(result['publish_allowed'], False)
 
     def test_missing_and_truncated_delivery_then_complete_retry_remain_held(self):
         for name in ('site-config.json', 'draft-result.json'):
