@@ -109,3 +109,49 @@ durability. With a permissive umask, files themselves can have group/world bits;
 privacy here comes from the new 0700 parent. Do not serve/chmod/move that
 directory or infer publish permission. Source/defaults and all original holds
 remain unchanged. Rollback removes this PR's inert tests/fixture/document only.
+
+## Continued offline boundary: output locale parity
+
+Current-head Pre-merge gates passed, while the genuine Gate again remained
+queued without a verdict or findings. Following the user's next-boundary
+instruction, the same PR adds an isolated-interpreter output-locale regression.
+Fresh city-content open PR/issue claims still returned only #14 and this PR,
+with no active issue claims. Targeted all-state/open Blog locale, PYTHONUTF8,
+ASCII-locale and output-locale searches returned no matching City scope. Existing
+#6042 owns reply scalar/encoding validity in one interpreter; #6054 saved HTML
+packet encoding, #6048 SEO export encoding and #6022 reservation scopes stay
+untouched. No existing producer/runtime/consumer implementation is duplicated.
+
+One regression method starts three bounded (30-second) isolated Python children:
+LC_ALL=C with UTF-8 mode explicitly OFF and ON, and C.utf8 with UTF-8 mode OFF.
+Each asserts its actual preferred encoding and mode; unavailable locale/mode
+fails instead of silently qualifying the host default. Inherited environment
+is replaced by explicit locale, source path and temporary scratch settings.
+Each child authenticates the original source pin before execution and reuses
+the existing HTTP/process/native-loader poison guards; DNS/connect guards are
+added. Only the parent launches the fixed local Python probes.
+
+The native generate and CLI both run with synthetic callbacks and a fixed mock
+UUID, preserving two frozen fixture byte strings. The config is UTF-8 with
+visible Unicode/decomposed accents/emoji/control escapes; the result is ASCII
+JSON with escaped Unicode native holds. Source action/topic, config SHA256,
+map digest, all receipt fields, gatePass=absent, draft_only and full missing-gate
+holds match the frozen expected pair. CLI and direct output are byte-identical
+across all three interpreter modes, with no stdout/stderr and two mock calls
+per child. A second output leaves the first pair's bytes/inode/mode/size/mtime
+unchanged. Fixture files contain synthetic placeholders, not generated content.
+
+All 21 producer tests PASS, zero skips. Two scratch-memory negative controls
+make this regression fail with assertion failures and zero execution errors:
+locale-dependent artifact encoding, and disabling ASCII escaping in the result
+serializer. No mutant is retained. Original pinned bytes pass again.
+
+This deliberately uses ASCII-escaped request JSON and ASCII map/exclusions:
+native input read_text remains locale-dependent. No raw non-ASCII input-file,
+non-ASCII filesystem-path, arbitrary OS/locale, physical durability, current
+upstream, installed runtime or editorial/publishing compatibility is claimed.
+The frozen result's UUID is a test double, not a live attempt identity. Separate
+temporary mock invocations do not authorize a live/UNKNOWN attempt replay.
+No schema, output contract, source producer, workflow, provider, flag or runtime
+wiring changes; default OFF and all original holds remain. Rollback also removes
+this inert test and its two expected-output fixtures through normal review.
