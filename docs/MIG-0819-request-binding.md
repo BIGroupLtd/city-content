@@ -58,7 +58,8 @@ CITY_PRODUCER_SOURCE=/path/to/pinned/city_blog_draft.py python3 -I -B -m unittes
 python3 -I -B tools/blog_output_request_parity.py
 ~~~
 
-All 46 methods PASS, zero skips: 38 preserved plus eight request-binding tests.
+All 53 current producer methods PASS, zero skips, including the eight preserved
+request-binding tests and seven separate envelope tests.
 Actual pinned native generate runs only with synthetic callbacks and authentic
 source pin 0bd7ae3754acbf056558c89b87240bedda98a7aa / SHA256
 5caf2bc81292a1e2639ffa5a7e0bd92c978cf478d7e8eb946eb82737bc410c06.

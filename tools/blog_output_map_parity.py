@@ -9,6 +9,7 @@ import stat
 
 MAP_LIMIT = 128 * 1024
 RECEIPT_LIMIT = 64 * 1024
+ARTIFACT_LIMIT = 2 * 1024 * 1024
 HOST = re.compile(r'[a-z0-9]+(?:[.-][a-z0-9]+)*', re.ASCII)
 
 
@@ -103,6 +104,13 @@ def _object(raw):
 def _host(value):
     return (isinstance(value, str) and HOST.fullmatch(value) is not None
             and 'fix' not in value.split('.')[:-1])
+
+
+def _single_post(output):
+    posts = output.get('blog_posts')
+    if not isinstance(posts, list) or len(posts) != 1 or not isinstance(posts[0], dict):
+        raise Refused('invalid_output_shape')
+    return posts[0]
 
 
 def qualify(*, offline=False, receipt=None, map_snapshot=None,

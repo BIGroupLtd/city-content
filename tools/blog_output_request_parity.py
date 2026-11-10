@@ -14,7 +14,7 @@ core = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(core)
 
 REQUEST_LIMIT = 128 * 1024
-ARTIFACT_LIMIT = 2 * 1024 * 1024
+ARTIFACT_LIMIT = core.ARTIFACT_LIMIT
 
 
 def qualify(*, offline=False, request_snapshot=None, expected_request_sha256=None,
@@ -44,10 +44,8 @@ def qualify(*, offline=False, request_snapshot=None, expected_request_sha256=Non
         if any(not isinstance(value, str) or not value.strip() for value in identity):
             raise core.Refused('invalid_request_identity')
         output = core._object(core._regular_bytes(artifact, ARTIFACT_LIMIT))
-        posts = output.get('blog_posts')
-        if not isinstance(posts, list) or len(posts) != 1 or not isinstance(posts[0], dict):
-            raise core.Refused('invalid_output_shape')
-        projected = posts[0].get('source_action_id'), posts[0].get('source_topic')
+        post = core._single_post(output)
+        projected = post.get('source_action_id'), post.get('source_topic')
         if any(not isinstance(value, str) for value in projected) or projected != identity:
             raise core.Refused('request_identity_mismatch')
         core._require_signature(inputs, original_signature)

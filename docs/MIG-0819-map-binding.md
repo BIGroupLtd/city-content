@@ -59,8 +59,8 @@ Run all existing and added producer regressions with the unchanged source pin:
 CITY_PRODUCER_SOURCE=/path/to/pinned/city_blog_draft.py python3 -I -B -m unittest discover -s tests -p 'test_city_producer*.py' -v
 ~~~
 
-46 methods PASS, zero skips, including seventeen map-binding and eight separate
-request/output identity methods. Actual
+53 methods PASS, zero skips, including seventeen map-binding, eight request/
+output identity and seven envelope methods. Actual
 source authentication remains ironclad-infra
 0bd7ae3754acbf056558c89b87240bedda98a7aa,
 SHA256 5caf2bc81292a1e2639ffa5a7e0bd92c978cf478d7e8eb946eb82737bc410c06.
@@ -168,6 +168,8 @@ the eighteen refusal cases. No package install, live data or provider required.
 The complementary [request/output identity qualifier](MIG-0819-request-binding.md)
 checks saved source action/topic against original request custody. It reuses
 these readers but leaves this CLI, map consistency and PR14 transfer scope intact.
+The separate [native envelope qualifier](MIG-0819-envelope-binding.md) adds outer
+serialized-field integrity without replacing source identity or transfer custody.
 
 ## Decoded input scalar validation
 
