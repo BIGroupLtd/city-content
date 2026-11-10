@@ -2,6 +2,7 @@
 import argparse
 import hashlib
 import json
+import math
 import os
 import re
 import stat
@@ -64,9 +65,29 @@ def _object(raw):
     def constant(_):
         raise Refused('invalid_json')
 
-    result = json.loads(raw.decode('utf-8'), object_pairs_hook=pairs, parse_constant=constant)
+    def number(token):
+        value = float(token)
+        if not math.isfinite(value):
+            raise Refused('invalid_json_number')
+        return value
+
+    result = json.loads(raw.decode('utf-8'), object_pairs_hook=pairs,
+                        parse_constant=constant, parse_float=number)
     if not isinstance(result, dict):
         raise Refused('invalid_json')
+    pending = [result]
+    while pending:
+        value = pending.pop()
+        if isinstance(value, str):
+            try:
+                value.encode('utf-8')
+            except UnicodeEncodeError:
+                raise Refused('invalid_json_unicode') from None
+        elif isinstance(value, dict):
+            pending.extend(value.keys())
+            pending.extend(value.values())
+        elif isinstance(value, list):
+            pending.extend(value)
     return result
 
 

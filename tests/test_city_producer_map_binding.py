@@ -4,6 +4,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import math
 from pathlib import Path
 import os
 import socket
@@ -379,6 +380,97 @@ class MapBinding(unittest.TestCase):
                     self.assertEqual(len(observed), 1)
                     self.assertEqual((state(target), state(folder / 'foreign')), observed[0])
         self.assertEqual({p.name: snapshot(p) for p in self.target.iterdir()}, self.retained)
+
+    def test_overflowing_json_numbers_refuse_at_every_receipt_metadata_depth(self):
+        prefix = self.receipt.read_bytes().rstrip()[:-1]
+        tokens = ('1e309', '-1e309', '1E+4000', '1.7976931348623159e308',
+                  '9' * 400 + 'e200', '-' + '9' * 400 + 'e200')
+        for index, token in enumerate(tokens):
+            for depth, value in enumerate((token, '[' + token + ']', '{"value":' + token + '}')):
+                with self.subTest(token=index, depth=depth):
+                    path = self.h.directory / ('overflow-' + str(index) + '-' + str(depth))
+                    path.write_bytes(prefix + b', "synthetic_extra":' + value.encode('ascii') + b'}')
+                    result = self.qualify(path)
+                    self.assertEqual(result['map_binding'], 'REFUSED')
+                    self.assertEqual(result['reason'], 'invalid_json_number')
+
+    def test_lone_surrogate_values_and_keys_refuse_at_all_metadata_positions(self):
+        original = json.loads(self.receipt.read_bytes())
+        for point in (0xD800, 0xDBFF, 0xDC00, 0xDFFF):
+            for position in ('string', 'native_hold', 'key', 'nested_array'):
+                with self.subTest(point=point, position=position):
+                    record = copy.deepcopy(original)
+                    value = 'SYNTHETIC_PRIVATE_CANARY' + chr(point)
+                    if position == 'string':
+                        record['synthetic_extra'] = value
+                    elif position == 'native_hold':
+                        record['native_violations'] = [value]
+                    elif position == 'key':
+                        record['synthetic_extra'] = {value: 'SYNTHETIC'}
+                    else:
+                        record['synthetic_extra'] = [[value]]
+                    path = self.h.directory / ('surrogate-' + str(point) + '-' + position)
+                    # ASCII wire is valid UTF-8; the defect appears only after
+                    # JSON escape decoding, so raw UTF-8 decode is insufficient.
+                    path.write_bytes(json.dumps(record, ensure_ascii=True).encode('ascii'))
+                    result = self.qualify(path)
+                    self.assertEqual(result['map_binding'], 'REFUSED')
+                    self.assertEqual(result['reason'], 'invalid_json_unicode')
+                    self.assertNotIn('CANARY', json.dumps(result))
+
+    def test_finite_float_edges_and_number_like_strings_remain_compatible(self):
+        prefix = self.receipt.read_bytes().rstrip()[:-1]
+        for index, token in enumerate(('-0.0', '5e-324', '1.7976931348623157e308',
+                                        '1e308', '0', '-4000', '"1e309"')):
+            with self.subTest(token=token):
+                path = self.h.directory / ('finite-' + str(index))
+                raw = prefix + b', "synthetic_extra":' + token.encode('ascii') + b'}'
+                path.write_bytes(raw)
+                parsed = parity._object(raw)['synthetic_extra']
+                if token == '"1e309"':
+                    self.assertEqual(parsed, '1e309')
+                else:
+                    self.assertTrue(math.isfinite(parsed))
+                if token == '-0.0':
+                    self.assertEqual(math.copysign(1, parsed), -1)
+                self.assertEqual(self.qualify(path)['map_binding'], 'MATCH')
+
+    def test_valid_unicode_scalars_and_escaped_pairs_preserve_exact_input_bytes(self):
+        original = json.loads(self.receipt.read_bytes())
+        text = 'SYNTHETIC café e\u0301 中文 😀\n\t\x00\ufeff'
+        for escaped in (True, False):
+            with self.subTest(escaped=escaped):
+                record = copy.deepcopy(original)
+                record['synthetic_extra'] = {text: [[text, json.loads('"\\ud83d\\ude00"')]]}
+                path = self.h.directory / ('scalar-' + str(escaped))
+                raw = json.dumps(record, ensure_ascii=escaped).encode('utf-8')
+                path.write_bytes(raw)
+                self.assertEqual(parity._object(raw)['synthetic_extra'], record['synthetic_extra'])
+                self.assertEqual(self.qualify(path)['map_binding'], 'MATCH')
+                self.assertEqual(path.read_bytes(), raw)
+
+    def test_scalar_cli_refusals_are_redacted_and_off_mode_does_not_parse(self):
+        original = self.receipt.read_bytes().rstrip()[:-1]
+        cases = (('number', b'1e309', 'invalid_json_number'),
+                 ('unicode', b'"SYNTHETIC_PRIVATE_CANARY\\ud800"', 'invalid_json_unicode'))
+        for label, value, reason in cases:
+            with self.subTest(label=label):
+                path = self.h.directory / ('cli-scalar-' + label)
+                path.write_bytes(original + b', "synthetic_extra":' + value + b'}')
+                args = ['--receipt', str(path), '--map-snapshot', str(self.baseline),
+                        '--expected-map-sha256', self.digest, '--request-host', 'allowed.example']
+                out, err = io.StringIO(), io.StringIO()
+                with patch('sys.stdout', out), patch('sys.stderr', err):
+                    self.assertEqual(parity.main(['--offline'] + args), 1)
+                self.assertEqual(err.getvalue(), '')
+                result = json.loads(out.getvalue())
+                self.assertEqual(result['reason'], reason)
+                self.assertEqual(result['status'], 'HOLD')
+                self.assertIs(result['publish_allowed'], False)
+                self.assertNotIn('CANARY', out.getvalue())
+                with patch.object(parity, '_object', side_effect=AssertionError('OFF parse')), \
+                        patch('sys.stdout', io.StringIO()):
+                    self.assertEqual(parity.main(args), 0)
 
 
 if __name__ == '__main__':

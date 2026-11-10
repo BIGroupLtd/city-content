@@ -59,7 +59,7 @@ Run all existing and added producer regressions with the unchanged source pin:
 CITY_PRODUCER_SOURCE=/path/to/pinned/city_blog_draft.py python3 -I -B -m unittest discover -s tests -p 'test_city_producer*.py' -v
 ~~~
 
-33 methods PASS, zero skips, including twelve map-binding methods. Actual
+38 methods PASS, zero skips, including seventeen map-binding methods. Actual
 source authentication remains ironclad-infra
 0bd7ae3754acbf056558c89b87240bedda98a7aa,
 SHA256 5caf2bc81292a1e2639ffa5a7e0bd92c978cf478d7e8eb946eb82737bc410c06.
@@ -163,3 +163,61 @@ PY
 Observed outputs are DISABLED/HOLD then MATCH/HOLD, all authority booleans false.
 The full source-authenticated regression command above additionally exercises
 the eighteen refusal cases. No package install, live data or provider required.
+
+## Decoded input scalar validation
+
+The next input-validation slice remains in this same qualifier/PR. Fresh
+city-content PR/issue inspection still found only other PR14 and this PR, with
+no active issue claim. Targeted map-qualifier scalar, receipt-surrogate and
+receipt-1e309 searches found no other owner. Actual sibling file inventories
+confirm #6042 owns model-reply/output encoding, #6054 saved HTML packet
+encoding and #6055 native SEO/GSC metric qualification. None edits this
+qualifier or owns its decoded receipt-metadata input boundary.
+
+Raw UTF-8 decoding alone did not catch ASCII JSON escape sequences decoding
+to lone surrogate code points. parse_constant rejected NaN/Infinity spellings,
+but ordinary JSON numeric tokens such as 1e309 still overflowed to Python
+infinity. Both could hide in otherwise unused receipt metadata and yield MATCH.
+The prior parser reproduced 36 assertion failures and zero execution errors
+across the new refusal/CLI cases.
+
+The existing JSON reader now requires each parsed float to remain finite in
+binary64 and validates every decoded string/key as UTF-8-encodable Unicode
+scalars, including strings nested in arrays/objects. Traversal is iterative.
+Fixed invalid_json_number and invalid_json_unicode codes refuse before MATCH,
+with no values or exception text in output. No field meanings, host rules,
+CLI arguments, schema, output authorization, runtime or default changes.
+
+Five new methods cover eighteen overflow tokens/placements, sixteen lone
+surrogate placements (values, native holds, nested keys and arrays), CLI
+redaction/OFF-no-parse and positive compatibility. Finite max/subnormal edges,
+signed zero, numeric-looking text, visible/decomposed Unicode, controls/interior
+BOM and valid escaped surrogate pairs retain their input bytes and map MATCH
+only under HOLD. All 38 methods pass, zero skips. This is finite binary64 float
+qualification, not exact decimal arithmetic, integer/count business validation,
+full receipt authentication or editorial acceptance. No bytes are normalized.
+
+Additional after-merge refusal smoke (fixed synthetic bytes; no producer/model):
+
+~~~sh
+python3 -I -B - <<'PY'
+import json, pathlib, subprocess, sys, tempfile
+with tempfile.TemporaryDirectory(prefix='mig0819-scalar-smoke-') as directory:
+    root = pathlib.Path(directory)
+    mapping, receipt = root / 'map.json', root / 'receipt.json'
+    mapping.write_bytes(b'{"allowed.example": "allowed.example"}')
+    raw = pathlib.Path('tests/fixtures/city-producer/locale-output-result.json').read_bytes().rstrip()
+    receipt.write_bytes(raw[:-1] + b', "synthetic_extra":1e309}')
+    result = subprocess.run([
+        sys.executable, '-I', '-B', 'tools/blog_output_map_parity.py',
+        '--offline', '--receipt', str(receipt), '--map-snapshot', str(mapping),
+        '--expected-map-sha256', '37bafb6d434ca6049a799107fa5a85a82f70caf783edbeadcaa0c9c48b916d80',
+        '--request-host', 'allowed.example'
+    ], env={}, capture_output=True, timeout=10)
+    assert result.returncode == 1 and not result.stderr
+    value = json.loads(result.stdout)
+    assert value['reason'] == 'invalid_json_number'
+    assert value['status'] == 'HOLD' and value['publish_allowed'] is False
+    print(result.stdout.decode('ascii'), end='')
+PY
+~~~
