@@ -15,12 +15,26 @@ class _Held(Exception):
     """Stop input inspection, then persist the fixed refusal outside its try."""
 
 
-def _persist_evidence(retained, result):
+def _verify_evidence(retained, evidence, payload):
+    descriptor = retained.fileno()
+    opened = os.fstat(descriptor)
+    named = os.stat(evidence, follow_symlinks=False)
+    if (opened.st_nlink != 1
+            or (opened.st_dev, opened.st_ino, opened.st_mode)
+            != (named.st_dev, named.st_ino, named.st_mode)):
+        raise OSError('evidence_identity_changed')
+    expected = payload.encode('utf-8')
+    if os.pread(descriptor, len(expected) + 1, 0) != expected:
+        raise OSError('evidence_readback_mismatch')
+
+
+def _persist_evidence(retained, result, evidence):
     payload = json.dumps(result, sort_keys=True) + '\n'
     if retained.write(payload) != len(payload):
         raise OSError('incomplete_evidence_write')
     retained.flush()
     os.fsync(retained.fileno())
+    _verify_evidence(retained, evidence, payload)
 
 
 def inspect_transfer(directory=None, evidence=None, *, offline=False,
@@ -38,7 +52,7 @@ def inspect_transfer(directory=None, evidence=None, *, offline=False,
         result['reason'] = 'offline_not_requested'
         return result
     # Reserve before inspecting: repeated delivery cannot replace prior evidence.
-    with Path(evidence).open('x', encoding='utf-8') as retained:
+    with Path(evidence).open('x+', encoding='utf-8') as retained:
         try:
             if (not isinstance(expected_run_id, str) or not expected_run_id
                     or not isinstance(expected_action_id, str) or not expected_action_id):
@@ -88,5 +102,5 @@ def inspect_transfer(directory=None, evidence=None, *, offline=False,
             pass
         # Input refusal is retainable; evidence I/O failure must propagate.
         # Never return an in-memory result as if its retry evidence was saved.
-        _persist_evidence(retained, result)
+        _persist_evidence(retained, result, evidence)
     return result
