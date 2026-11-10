@@ -155,3 +155,8 @@ temporary mock invocations do not authorize a live/UNKNOWN attempt replay.
 No schema, output contract, source producer, workflow, provider, flag or runtime
 wiring changes; default OFF and all original holds remain. Rollback also removes
 this inert test and its two expected-output fixtures through normal review.
+
+The next same-PR implementation adds the default-OFF read-only
+[original-map binding qualifier](MIG-0819-map-binding.md). It preserves all above
+scopes and native source bytes, and addresses only independently retained
+canonical-map snapshot/receipt consistency.
