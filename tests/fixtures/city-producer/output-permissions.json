@@ -1,0 +1,15 @@
+{
+  "synthetic_only": true,
+  "enabled": false,
+  "approved": false,
+  "not_runtime_queue": true,
+  "status": "HOLD",
+  "cases": [
+    {"umask": "000", "directory": "700", "file": "666"},
+    {"umask": "002", "directory": "700", "file": "664"},
+    {"umask": "007", "directory": "700", "file": "660"},
+    {"umask": "022", "directory": "700", "file": "644"},
+    {"umask": "027", "directory": "700", "file": "640"},
+    {"umask": "077", "directory": "700", "file": "600"}
+  ]
+}

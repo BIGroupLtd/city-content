@@ -1,0 +1,22 @@
+{
+  "builderRunId": "0123456789abcdef0123456789abcdef",
+  "native_violations": [
+    "SYNTHETIC \u03a9",
+    "SYNTHETIC \u4e2d\u6587"
+  ],
+  "requested_model": "claude-sonnet-4-6",
+  "reported_model": null,
+  "artifactSHA256": "2aebc1db8a8dc87b612eabdbcbe6b7235d0bcc61770b7e93fd747b4746aabc1e",
+  "gatePass": "absent",
+  "status": "draft_only",
+  "canonical_host": "allowed.example",
+  "public_origin": "https://allowed.example",
+  "canonical_host_map_sha256": "37bafb6d434ca6049a799107fa5a85a82f70caf783edbeadcaa0c9c48b916d80",
+  "missing_full_gate_inputs": [
+    "current_master_rules_binding",
+    "verified_claim_sources",
+    "native_site_enrollment",
+    "current_estate_similarity_corpus",
+    "retained_full_builder_gate_result"
+  ]
+}
