@@ -3,6 +3,12 @@ import hashlib
 import json
 from pathlib import Path
 
+EXPECTED_MEMBERS = frozenset({'draft-result.json', 'site-config.json'})
+
+
+def _bundle_members(directory):
+    return frozenset(path.name for path in Path(directory).iterdir())
+
 
 def inspect_transfer(directory=None, evidence=None, *, offline=False,
                      expected_receipt_sha256=None, expected_run_id=None,
@@ -26,12 +32,21 @@ def inspect_transfer(directory=None, evidence=None, *, offline=False,
                 result['reason'] = 'missing_attempt_custody'
                 retained.write(json.dumps(result, sort_keys=True) + '\n')
                 return result
+            members = _bundle_members(directory)
+            if members - EXPECTED_MEMBERS:
+                result['reason'] = 'unexpected_bundle_members'
+                retained.write(json.dumps(result, sort_keys=True) + '\n')
+                return result
             raw = {}
             for name in ('draft-result.json', 'site-config.json'):
                 raw[name] = (Path(directory) / name).read_bytes()
                 result['observed'][name] = {
                     'bytes': len(raw[name]),
                     'sha256': hashlib.sha256(raw[name]).hexdigest()}
+            if _bundle_members(directory) != members:
+                result['reason'] = 'bundle_members_changed'
+                retained.write(json.dumps(result, sort_keys=True) + '\n')
+                return result
             receipt = json.loads(raw['draft-result.json'])
             artifact = json.loads(raw['site-config.json'])
             if (hashlib.sha256(raw['draft-result.json']).hexdigest()
