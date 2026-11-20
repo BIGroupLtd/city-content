@@ -1,0 +1,26 @@
+{
+  "synthetic_only": true,
+  "enabled": false,
+  "approved": false,
+  "not_runtime_queue": true,
+  "status": "HOLD",
+  "receipt": {
+    "builderRunId": "00000000000000000000000000000000",
+    "native_violations": [],
+    "requested_model": "claude-sonnet-4-6",
+    "reported_model": null,
+    "artifactSHA256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "gatePass": "absent",
+    "status": "draft_only",
+    "canonical_host": "synthetic.example",
+    "public_origin": "https://synthetic.example",
+    "canonical_host_map_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "missing_full_gate_inputs": [
+      "current_master_rules_binding",
+      "verified_claim_sources",
+      "native_site_enrollment",
+      "current_estate_similarity_corpus",
+      "retained_full_builder_gate_result"
+    ]
+  }
+}
