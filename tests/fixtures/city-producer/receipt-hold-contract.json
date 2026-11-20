@@ -1,0 +1,21 @@
+{
+  "synthetic_only": true,
+  "enabled": false,
+  "approved": false,
+  "not_runtime_queue": true,
+  "status": "HOLD",
+  "receipt": {
+    "status": "draft_only",
+    "gatePass": "absent",
+    "requested_model": "claude-sonnet-4-6",
+    "reported_model": null,
+    "native_violations": [],
+    "missing_full_gate_inputs": [
+      "current_master_rules_binding",
+      "verified_claim_sources",
+      "native_site_enrollment",
+      "current_estate_similarity_corpus",
+      "retained_full_builder_gate_result"
+    ]
+  }
+}
